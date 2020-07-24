@@ -11,10 +11,6 @@ import Clarifai, { COLOR_MODEL } from 'clarifai';
 import './App.css';
 import { render } from '@testing-library/react';
 
-const app = new Clarifai.App({
-  apiKey: '94cda51b7b7c4501862b418b9daada1c'
-});
-
 const particlesOptions = {
   particles: {
     number: {
@@ -27,23 +23,26 @@ const particlesOptions = {
   }
 }
 
+const initialState = {
+  input: '',
+  imageUrl: '',
+  box: {},
+  route: 'signin',
+  isSignedIn: false,
+  user: {
+    id: '',
+    name: '',
+    email: '',
+    entries: 0,
+    joined: ''
+  }
+}
+
+
 class App extends Component{
   constructor() {
     super();
-    this.state = {
-      input: '',
-      imageUrl: '',
-      box: {},
-      route: 'signin',
-      isSignedIn: false,
-      user: {
-        id: '',
-        name: '',
-        email: '',
-        entries: 0,
-        joined: ''
-      }
-    }
+    this.state = initialState;
   }
 
   loadUser = (data) => {
@@ -81,12 +80,19 @@ class App extends Component{
 
   onButtonSubmit = () => {
     this.setState({imageUrl: this.state.input});
-    app.models.predict(
-        Clarifai.FACE_DETECT_MODEL, 
-        this.state.input)
+    fetch('https://glacial-shelf-94960.herokuapp.com/imageurl', {
+        method: 'post',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            input: this.state.input,  
+        })
+      })
+      .then(response => response.json())
       .then(response => {
         if(response) {
-          fetch('http://localhost:3000/image', {
+          fetch('https://glacial-shelf-94960.herokuapp.com/image', {
             method: 'put',
             headers: {
                 'Content-Type': 'application/json'
@@ -101,6 +107,7 @@ class App extends Component{
                 entries: count,
               }))
             })
+            .catch(console.log);
         }
         this.displayFaceBox(this.calculateFaceLocation(response))
       })
@@ -109,7 +116,7 @@ class App extends Component{
 
   onRouteChange = (route) => {
     if (route === 'signout'){
-      this.setState({isSignedIn: false});
+      this.setState(initialState);
       route = 'signin';
     } else if (route === 'home'){
       this.setState({isSignedIn: true});
